@@ -295,6 +295,7 @@
         targetText = "[hidden]";
         targetSelector = "[hidden]";
         log("Cross domain error when tracking click event. See https://docs.bugsnag.com/platforms/browsers/faq/#3-cross-origin-script-errors");
+        console.log(e);
       }
 
       self.leaveBreadcrumb({
@@ -680,20 +681,25 @@
   function anonymizedNodeText(el) {
     var text = "", stack = [el], iterEl = event.target, children, i, prevPiiPlaceholder, tmpText;
 
+    var startTime = Date.now(), nodes = 0;
     // Walk up to root. Anonymize whole element, if an ancestor has attribute data-pii.
     while(iterEl && iterEl.getAttribute) {
+      nodes++;
       if((tmpText = iterEl.getAttribute("data-pii"))) {
         return piiPlaceholder(tmpText);
       }
       iterEl = iterEl.parentNode;
     }
 
+    console.log("UP: " + (Date.now() - startTime) + " nodes: " + nodes);
+    startTime = Date.now(), nodes = 0;
+
     // Concatenates texts of all leaf nodes descended from el.
     // Replaces contents of elements with attribute data-pii with a placeholder
-    while(stack.length && text.length < 140) {
+    while(stack.length /*&& text.length < 140*/) {
       iterEl = stack.pop();
       children = iterEl.childNodes;
-
+      nodes++
       if(iterEl.getAttribute && (tmpText = iterEl.getAttribute("data-pii"))) {
         tmpText = piiPlaceholder(tmpText);
         // Combine subsequent identical placeholders
@@ -713,6 +719,11 @@
         }
       }
     }
+    console.log("DOWN: " + (Date.now() - startTime) + " nodes: " + nodes);
+
+    startTime = Date.now();
+    el.querySelectorAll('[data-pii]');
+    console.log("BLIND: " + (Date.now() - startTime) + " nodes: " + nodes);
     return text;
   }
 
